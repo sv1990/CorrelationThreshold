@@ -1,6 +1,11 @@
 from sklearn import base
 import pandas as pd
 import numpy as np
+from scipy.stats import pearsonr
+
+
+def _pearsonr_pval(x, y):
+    return pearsonr(x, y)[1]
 
 
 class CorrelationThreshold(base.BaseEstimator, base.TransformerMixin):
@@ -13,25 +18,33 @@ class CorrelationThreshold(base.BaseEstimator, base.TransformerMixin):
     # * Use feature_selection.SelectorMixin
     # * Also use p-value (https://stackoverflow.com/a/55041277/4990485)
 
-    def __init__(self, r_threshold=0.5):
+    def __init__(self, r_threshold=0.5, p_threshold=0.05):
         """
         Paramters:
         ----------
-        r_threshold: Maximal correlation between features that is preserved. Has to be in [0, 1].
+        `r_threshold`: Maximal correlation between features that is preserved. Has to be in [0, 1].
+        `p_threshold`: Corrleation are only considered to be significant if `p < p_threshold`
         """
         super().__init__()
         self.r_threshold = r_threshold
+        self.p_threshold = p_threshold
         self.un_corr_idx = None
 
     def fit(self, X, y=None):
-        df_corr = pd.DataFrame(X).corr(method='pearson', min_periods=1)
-        lower_triangle_matrix = np.tril(
-            np.ones(shape=[len(df_corr)]*2, dtype=bool))
-        corr_masked = df_corr.mask(lower_triangle_matrix).abs()
-        df_correlated = (corr_masked > self.r_threshold).any()
+        r_masked = self._get_masked_corr(X)
+        p_masked = self._get_masked_corr(X, method=_pearsonr_pval)
+        df_correlated = ((r_masked > self.r_threshold) &
+                         (p_masked < self.p_threshold)).any()
         df_not_correlated = ~df_correlated
         self.un_corr_idx = df_not_correlated.loc[df_not_correlated == True].index
         return self
+
+    def _get_masked_corr(self, X, method='pearson'):
+        df_corr = pd.DataFrame(X).corr(method=method, min_periods=1)
+        lower_triangle_matrix = np.tril(
+            np.ones(shape=[len(df_corr)]*2, dtype=bool))
+        corr_masked = df_corr.mask(lower_triangle_matrix).abs()
+        return corr_masked
 
     def transform(self, X):
         if hasattr(X, 'loc'):
