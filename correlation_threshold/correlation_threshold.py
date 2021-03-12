@@ -1,7 +1,7 @@
-from sklearn import base
-import pandas as pd
 import numpy as np
+import pandas as pd
 from scipy.stats import pearsonr
+from sklearn import base
 
 
 def _pearsonr_pval(x, y):
