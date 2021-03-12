@@ -11,12 +11,12 @@ def _pearsonr_pval(x, y):
 class CorrelationThreshold(base.BaseEstimator, base.TransformerMixin):
     """
     Transformer that drops all features that have a high correlation to another feature.
+
+    Inpired by this stackoverflow answer https://stackoverflow.com/a/49282823/4990485
     """
 
-    # https://stackoverflow.com/a/49282823/4990485
     # TODO:
     # * Use feature_selection.SelectorMixin
-    # * Also use p-value (https://stackoverflow.com/a/55041277/4990485)
 
     def __init__(self, r_threshold=0.5, p_threshold=0.05):
         """
