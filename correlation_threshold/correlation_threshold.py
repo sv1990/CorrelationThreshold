@@ -1,0 +1,59 @@
+from sklearn import base
+import pandas as pd
+import numpy as np
+
+
+class CorrelationThreshold(base.BaseEstimator, base.TransformerMixin):
+    """
+    Transformer that drops all features that have a high correlation to another feature.
+    """
+
+    # https://stackoverflow.com/a/49282823/4990485
+    # TODO:
+    # * Use feature_selection.SelectorMixin
+    # * Also use p-value (https://stackoverflow.com/a/55041277/4990485)
+
+    def __init__(self, r_threshold=0.5):
+        """
+        Paramters:
+        ----------
+        threshold: Maximal correlation between features that is preserved. Has to be in [0, 1].
+        """
+        super().__init__()
+        self.r_threshold = r_threshold
+        self.un_corr_idx = None
+
+    def fit(self, X, y=None):
+        df_corr = pd.DataFrame(X).corr(method='pearson', min_periods=1)
+        df_not_correlated = ~(df_corr.mask(
+            np.tril(np.ones(shape=[len(df_corr)]*2, dtype=bool))).abs() > self.r_threshold).any()
+        self.un_corr_idx = df_not_correlated.loc[df_not_correlated[df_not_correlated.index] == True].index
+        return self
+
+    def transform(self, X):
+        if hasattr(X, 'loc'):
+            return X.loc[:, self.un_corr_idx]
+        else:
+            return X[:, self.un_corr_idx]
+
+
+if __name__ == '__main__':
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    a = np.random.normal(size=100)
+    b = np.random.normal(size=100)
+    c = b + np.random.normal(size=100)
+    d = -a + np.random.normal(size=100)
+    e = np.random.normal(size=100)
+    X = pd.DataFrame(dict(a=a, b=b, c=c, d=d, e=e))
+
+    X2 = CorrelationThreshold().fit_transform(X)
+
+    fig, ax = plt.subplots(ncols=2, figsize=(10, 5), dpi=100)
+    fig.suptitle('Correlation Matrices', fontsize=16)
+    ax[0].set_title('Original Data')
+    ax[1].set_title('After eliminating correlated features')
+    sns.heatmap(X.corr(), cmap='seismic', vmin=-1, vmax=1, ax=ax[0])
+    sns.heatmap(X2.corr(), cmap='seismic', vmin=-1, vmax=1, ax=ax[1])
+    plt.tight_layout()
+    plt.show()
