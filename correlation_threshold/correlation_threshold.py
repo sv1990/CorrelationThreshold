@@ -17,7 +17,7 @@ class CorrelationThreshold(base.BaseEstimator, base.TransformerMixin):
         """
         Paramters:
         ----------
-        threshold: Maximal correlation between features that is preserved. Has to be in [0, 1].
+        r_threshold: Maximal correlation between features that is preserved. Has to be in [0, 1].
         """
         super().__init__()
         self.r_threshold = r_threshold
@@ -25,9 +25,12 @@ class CorrelationThreshold(base.BaseEstimator, base.TransformerMixin):
 
     def fit(self, X, y=None):
         df_corr = pd.DataFrame(X).corr(method='pearson', min_periods=1)
-        df_not_correlated = ~(df_corr.mask(
-            np.tril(np.ones(shape=[len(df_corr)]*2, dtype=bool))).abs() > self.r_threshold).any()
-        self.un_corr_idx = df_not_correlated.loc[df_not_correlated[df_not_correlated.index] == True].index
+        lower_triangle_matrix = np.tril(
+            np.ones(shape=[len(df_corr)]*2, dtype=bool))
+        corr_masked = df_corr.mask(lower_triangle_matrix).abs()
+        df_correlated = (corr_masked > self.r_threshold).any()
+        df_not_correlated = ~df_correlated
+        self.un_corr_idx = df_not_correlated.loc[df_not_correlated == True].index
         return self
 
     def transform(self, X):
