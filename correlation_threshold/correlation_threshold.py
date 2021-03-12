@@ -40,6 +40,10 @@ class CorrelationThreshold(base.BaseEstimator, base.TransformerMixin):
         return self
 
     def _get_masked_corr(self, X, method='pearson'):
+        """
+        Obtaines the correlation matrix using `method` 
+        and masks it then to the upper triangle matrix
+        """
         df_corr = pd.DataFrame(X).corr(method=method, min_periods=1)
         lower_triangle_matrix = np.tril(
             np.ones(shape=[len(df_corr)]*2, dtype=bool))
