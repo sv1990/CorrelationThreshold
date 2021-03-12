@@ -1,5 +1,7 @@
 astroid==2.5.1
 autopep8==1.5.5
+# Editable Git install with no remote (correlation-threshold==0.0.1)
+-e .
 cycler==0.10.0
 isort==5.7.0
 joblib==1.0.1
