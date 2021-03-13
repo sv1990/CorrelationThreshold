@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from scipy.stats import pearsonr
 from sklearn import base, feature_selection
+from sklearn.utils import validation
 
 
 def _pearsonr_pval(x, y):
@@ -37,8 +38,6 @@ class CorrelationThreshold(base.BaseEstimator, feature_selection.SelectorMixin):
         super().__init__()
         self.r_threshold = r_threshold
         self.p_threshold = p_threshold
-        self.columns = None
-        self.support_mask = None
 
     def fit(self, X, y=None):
         r_masked = _get_masked_corr(X)
@@ -46,13 +45,15 @@ class CorrelationThreshold(base.BaseEstimator, feature_selection.SelectorMixin):
         df_correlated = ((r_masked > self.r_threshold) &
                          (p_masked < self.p_threshold)).any()
         df_not_correlated = ~df_correlated
-        self.columns = df_not_correlated.loc[df_not_correlated == True].index
-        self.support_mask = np.array(
-            [col in self.columns for col in df_not_correlated.index])
+        self.columns_ = df_not_correlated.loc[df_not_correlated == True].index
+        self.support_mask_ = np.array(
+            [col in self.columns_ for col in df_not_correlated.index])
         return self
 
     def _get_support_mask(self):
-        return self.support_mask
+        validation.check_is_fitted(self)
+        return self.support_mask_
 
     def get_feature_names(self):
-        return self.columns
+        validation.check_is_fitted(self)
+        return self.columns_
