@@ -15,9 +15,6 @@ class CorrelationThreshold(base.BaseEstimator, feature_selection.SelectorMixin):
     Inpired by this stackoverflow answer https://stackoverflow.com/a/49282823/4990485
     """
 
-    # TODO:
-    # * Use feature_selection.SelectorMixin
-
     def __init__(self, r_threshold=0.5, p_threshold=0.05):
         """
         Paramters:
@@ -28,6 +25,7 @@ class CorrelationThreshold(base.BaseEstimator, feature_selection.SelectorMixin):
         super().__init__()
         self.r_threshold = r_threshold
         self.p_threshold = p_threshold
+        self.columns = None
         self.support_mask = None
 
     def fit(self, X, y=None):
@@ -36,8 +34,9 @@ class CorrelationThreshold(base.BaseEstimator, feature_selection.SelectorMixin):
         df_correlated = ((r_masked > self.r_threshold) &
                          (p_masked < self.p_threshold)).any()
         df_not_correlated = ~df_correlated
-        un_corr_idx = df_not_correlated.loc[df_not_correlated == True].index
-        self.support_mask = np.array([col in un_corr_idx for col in df_not_correlated.index])
+        self.columns = df_not_correlated.loc[df_not_correlated == True].index
+        self.support_mask = np.array(
+            [col in self.columns for col in df_not_correlated.index])
         return self
 
     def _get_masked_corr(self, X, method='pearson'):
@@ -53,3 +52,6 @@ class CorrelationThreshold(base.BaseEstimator, feature_selection.SelectorMixin):
 
     def _get_support_mask(self):
         return self.support_mask
+
+    def get_feature_names(self):
+        return self.columns
