@@ -1,14 +1,14 @@
 import numpy as np
 import pandas as pd
 from scipy.stats import pearsonr
-from sklearn import base
+from sklearn import base, feature_selection
 
 
 def _pearsonr_pval(x, y):
     return pearsonr(x, y)[1]
 
 
-class CorrelationThreshold(base.BaseEstimator, base.TransformerMixin):
+class CorrelationThreshold(base.BaseEstimator, feature_selection.SelectorMixin):
     """
     Transformer that drops all features that have a high correlation to another feature.
 
@@ -28,7 +28,7 @@ class CorrelationThreshold(base.BaseEstimator, base.TransformerMixin):
         super().__init__()
         self.r_threshold = r_threshold
         self.p_threshold = p_threshold
-        self.un_corr_idx = None
+        self.support_mask = None
 
     def fit(self, X, y=None):
         r_masked = self._get_masked_corr(X)
@@ -36,7 +36,8 @@ class CorrelationThreshold(base.BaseEstimator, base.TransformerMixin):
         df_correlated = ((r_masked > self.r_threshold) &
                          (p_masked < self.p_threshold)).any()
         df_not_correlated = ~df_correlated
-        self.un_corr_idx = df_not_correlated.loc[df_not_correlated == True].index
+        un_corr_idx = df_not_correlated.loc[df_not_correlated == True].index
+        self.support_mask = np.array([col in un_corr_idx for col in df_not_correlated.index])
         return self
 
     def _get_masked_corr(self, X, method='pearson'):
@@ -50,10 +51,5 @@ class CorrelationThreshold(base.BaseEstimator, base.TransformerMixin):
         corr_masked = df_corr.mask(lower_triangle_matrix).abs()
         return corr_masked
 
-    def transform(self, X):
-        if hasattr(X, 'loc'):
-            return X.loc[:, self.un_corr_idx]
-        else:
-            return X[:, self.un_corr_idx]
-
-
+    def _get_support_mask(self):
+        return self.support_mask
