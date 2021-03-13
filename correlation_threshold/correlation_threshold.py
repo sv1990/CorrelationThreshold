@@ -20,7 +20,7 @@ class CorrelationThreshold(base.BaseEstimator, feature_selection.SelectorMixin):
         Paramters:
         ----------
         `r_threshold`: Maximal correlation between features that is preserved. Has to be in [0, 1].
-        `p_threshold`: Corrleation are only considered to be significant if `p < p_threshold`
+        `p_threshold`: Correlations are only considered to be significant if `p < p_threshold`
         """
         super().__init__()
         self.r_threshold = r_threshold
