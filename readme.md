@@ -1,5 +1,7 @@
 # CorrelationThreshold
 
+`CorrelationThreshold` is a scikit-learn like transformer that removes features that have a high correlation to other features.
+
 ## Usage
 
 ```python
